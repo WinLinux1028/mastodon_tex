@@ -61,13 +61,15 @@ async fn main() {
         }
     });
 
-    client
-        .user_streaming()
-        .await
-        .listen(Box::new(|msg| {
-            let _ = QUEUE.0.try_send(msg);
-        }))
-        .await;
+    loop {
+        client
+            .user_streaming()
+            .await
+            .listen(Box::new(|msg| {
+                let _ = QUEUE.0.try_send(msg);
+            }))
+            .await;
+    }
 }
 
 async fn run(client: &Mastodon, msg: Message) -> Result<(), Box<dyn std::error::Error>> {
