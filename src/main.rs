@@ -170,6 +170,7 @@ fn text_clean(s: &str) -> Option<String> {
 
     let s = s.replace("&lt;", "<");
     let s = s.replace("&gt;", ">");
+    let s = s.replace("&amp;", "&");
 
     let html_tag_remove = Regex::new("<.*?>").unwrap();
     let s = html_tag_remove.replace_all(&s, "");
