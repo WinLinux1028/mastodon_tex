@@ -1,0 +1,5 @@
+{
+    base_url: "https://example.com",
+    access_token: "YOUR_TOKEN",
+    working_directory: "/tmp/mastodon-tex",
+}

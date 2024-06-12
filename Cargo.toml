@@ -1,0 +1,14 @@
+[package]
+name = "mastodon-tex"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+megalodon = "0.13"
+lazy_static = "1"
+atomic-counter = "1"
+serde = "1"
+json5 = "0.4"
+regex = "1"
+scopeguard = "1"
