@@ -69,6 +69,8 @@ async fn main() {
                 let _ = QUEUE.0.try_send(msg);
             }))
             .await;
+
+        tokio::time::sleep(Duration::from_secs(1)).await;
     }
 }
 
