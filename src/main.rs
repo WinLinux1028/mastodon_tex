@@ -13,7 +13,7 @@ use megalodon::{
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use tokio::{
-    fs::File,
+    fs::{self, File},
     io::{AsyncReadExt, AsyncWriteExt},
     process::Command,
     sync::{
@@ -44,10 +44,8 @@ async fn main() {
         None,
     );
 
-    let _ = tokio::fs::remove_dir_all(&config.working_directory).await;
-    tokio::fs::create_dir(&config.working_directory)
-        .await
-        .unwrap();
+    let _ = fs::remove_dir_all(&config.working_directory).await;
+    fs::create_dir(&config.working_directory).await.unwrap();
     std::env::set_current_dir(&config.working_directory).unwrap();
 
     let client_ = client.clone();
@@ -55,8 +53,8 @@ async fn main() {
         let mut receiver = QUEUE.1.lock().await.take().unwrap();
         while let Some(msg) = receiver.recv().await {
             tokio::select! {
-                _ = run(&client_, msg) => {},
-                _ = tokio::time::sleep(Duration::from_secs(10)) => {},
+                _ = run(&config, &client_, msg) => {},
+                _ = tokio::time::sleep(Duration::from_secs(config.compile_timeout_sec)) => {},
             }
         }
     });
@@ -74,7 +72,11 @@ async fn main() {
     }
 }
 
-async fn run(client: &Mastodon, msg: Message) -> Result<(), Box<dyn std::error::Error>> {
+async fn run(
+    config: &Config,
+    client: &Mastodon,
+    msg: Message,
+) -> Result<(), Box<dyn std::error::Error>> {
     let msg = match msg {
         Message::Notification(msg) => msg,
         _ => return Ok(()),
@@ -103,27 +105,22 @@ async fn run(client: &Mastodon, msg: Message) -> Result<(), Box<dyn std::error::
     );
 
     let num = COUNTER.inc();
-    let base_name = format!("request_{}", num);
-    let tex_file = format!("{}.tex", &base_name);
+    let base_dir = format!("request_{}", num);
+
+    fs::create_dir(&base_dir).await?;
     scopeguard::defer! {
-        let _ = Command::new("sh")
-            .arg("-c")
-            .arg(format!("rm -rf {}*", base_name))
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .spawn();
+        let _ = std::fs::remove_dir_all(&base_dir);
     }
 
-    let mut f = File::create(&tex_file).await?;
+    let mut f = File::create(format!("{}/file.tex", &base_dir)).await?;
     f.write_all(tex.as_bytes()).await?;
     f.flush().await?;
 
     let mut compile = Command::new("sh")
         .arg("-c")
         .arg(format!(
-            "lualatex --no-shell-escape --no-socket --halt-on-error {0} && lualatex --no-shell-escape --no-socket --halt-on-error {0} && inkscape --export-type=png --export-width=1920 --export-background=#FFFFFF --pages=1 {1}.pdf",
-            &tex_file, &base_name
+            "cd {0} && {1} file.tex && {1} file.tex && {2} file.pdf",
+            &base_dir, &config.tex_compile_command, &config.pdf_png_convert_command
         ))
         .stdin(Stdio::null())
         .stdout(Stdio::null())
@@ -135,16 +132,21 @@ async fn run(client: &Mastodon, msg: Message) -> Result<(), Box<dyn std::error::
         return Ok(());
     }
 
-    let png = File::open(format!("{}.png", &base_name)).await?;
+    let png = File::open(format!("{}/file.png", &base_dir)).await?;
     let attachment = match client.upload_media_reader(Box::new(png), None).await?.json {
         UploadMedia::Attachment(a) => a,
         UploadMedia::AsyncAttachment(a) => get_async_attachment(client, a).await,
     };
 
+    let visibility = match &msg.visibility {
+        StatusVisibility::Direct => StatusVisibility::Direct,
+        _ => StatusVisibility::Unlisted,
+    };
+
     let options = megalodon::megalodon::PostStatusInputOptions {
         media_ids: Some(vec![attachment.id.to_string()]),
         in_reply_to_id: Some(msg.id.to_string()),
-        visibility: Some(StatusVisibility::Unlisted),
+        visibility: Some(visibility),
         ..Default::default()
     };
 
@@ -190,4 +192,7 @@ struct Config {
     base_url: String,
     access_token: String,
     working_directory: String,
+    tex_compile_command: String,
+    pdf_png_convert_command: String,
+    compile_timeout_sec: u64,
 }

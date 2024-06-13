@@ -2,4 +2,11 @@
     base_url: "https://example.com",
     access_token: "YOUR_TOKEN",
     working_directory: "/tmp/mastodon-tex",
+    
+    // TeXはDockerで動かすことを推奨します.
+    // LuaLaTeXは初回起動時にフォントキャッシュを作成する必要があるので, texlive/texlive:latestをベースに1回コンパイルしてキャッシュを作成したイメージ(この例ではmylatex)を使うと良いです.
+    tex_compile_command: "docker run --rm -v .:/workdir mylatex lualatex --no-shell-escape --no-socket --halt-on-error",
+    
+    pdf_png_convert_command: "inkscape --export-type=png --export-width=1920 --export-background=#FFFFFF --pages=1",
+    compile_timeout_sec: 10,
 }
