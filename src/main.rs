@@ -144,6 +144,7 @@ async fn run(
 
     let visibility = match &msg.visibility {
         StatusVisibility::Direct => StatusVisibility::Direct,
+        StatusVisibility::Private => StatusVisibility::Private,
         _ => StatusVisibility::Unlisted,
     };
 
