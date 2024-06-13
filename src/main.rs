@@ -122,7 +122,7 @@ async fn run(client: &Mastodon, msg: Message) -> Result<(), Box<dyn std::error::
     let mut compile = Command::new("sh")
         .arg("-c")
         .arg(format!(
-            "lualatex --no-shell-escape --no-socket --safer --halt-on-error {} && inkscape --export-type=png --export-width=1920 --export-background=#FFFFFF --pages=1 {}.pdf",
+            "lualatex --no-shell-escape --no-socket --halt-on-error {0} && lualatex --no-shell-escape --no-socket --halt-on-error {0} && inkscape --export-type=png --export-width=1920 --export-background=#FFFFFF --pages=1 {1}.pdf",
             &tex_file, &base_name
         ))
         .stdin(Stdio::null())
@@ -168,14 +168,16 @@ fn text_clean(s: &str) -> Option<String> {
     let new_line = Regex::new("<br *?/?>").unwrap();
     let s = new_line.replace_all(s, "\n");
 
-    let s = s.replace("&lt;", "<");
-    let s = s.replace("&gt;", ">");
-    let s = s.replace("&amp;", "&");
-
     let html_tag_remove = Regex::new("<.*?>").unwrap();
     let s = html_tag_remove.replace_all(&s, "");
 
-    let tex_check = Regex::new(r"(\\directlua)|(\\end\{document\})").unwrap();
+    let s = s.replace("&lt;", "<");
+    let s = s.replace("&gt;", ">");
+    let s = s.replace("&amp;", "&");
+    let s = s.replace("&apos;", "'");
+    let s = s.replace("&quot;", "\"");
+
+    let tex_check = Regex::new(r"(\\directlua)|(\\usepackage)|(\\end\{document\})").unwrap();
     if tex_check.find(s.as_ref()).is_some() {
         return None;
     }
