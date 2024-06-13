@@ -184,8 +184,7 @@ fn text_clean(s: &str) -> Option<String> {
     let s = s.replace("&apos;", "'");
     let s = s.replace("&quot;", "\"");
 
-    let tex_check = Regex::new(r"(\\directlua)|(\\usepackage)|(\\end\{document\})").unwrap();
-    if tex_check.find(s.as_ref()).is_some() {
+    if s.contains(r"\end{document}") {
         return None;
     }
 
