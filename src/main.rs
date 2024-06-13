@@ -52,10 +52,11 @@ async fn main() {
     tokio::spawn(async move {
         let mut receiver = QUEUE.1.lock().await.take().unwrap();
         while let Some(msg) = receiver.recv().await {
-            tokio::select! {
-                _ = run(&config, &client_, msg) => {},
-                _ = tokio::time::sleep(Duration::from_secs(config.compile_timeout_sec)) => {},
-            }
+            let config = config.clone();
+            let client_ = client_.clone();
+            tokio::spawn(async move {
+                let _ = run(&config, &client_, msg).await;
+            });
         }
     });
 
@@ -127,9 +128,12 @@ async fn run(
         .stderr(Stdio::null())
         .spawn()?;
 
-    let compile = compile.wait().await?;
-    if !compile.success() {
-        return Ok(());
+    tokio::select! {
+        Ok(compile) = compile.wait() => if !compile.success() {
+            return Ok(())
+        },
+        _ = tokio::time::sleep(Duration::from_secs(config.compile_timeout_sec)) => {},
+        else => return Ok(()),
     }
 
     let png = File::open(format!("{}/file.png", &base_dir)).await?;
@@ -187,7 +191,7 @@ fn text_clean(s: &str) -> Option<String> {
     Some(s.trim().to_string())
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct Config {
     base_url: String,
     access_token: String,
