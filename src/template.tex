@@ -7,3 +7,47 @@
 \usepackage{pagecolor}
 
 \usepackage{multirow}
+
+\usepackage{luatexja-fontspec}
+\setmainfont[
+    BoldFont={*/B},
+    ItalicFont={*/I},
+    BoldItalicFont={*/BI},
+    SlantedFont={* Slanted/R},
+    BoldSlantedFont={* Slanted/B},
+    SwashFont={*/R},
+    BoldSwashFont={*/B},
+    SmallCapsFont={* Caps/R},
+    UprightFont={*/R}
+]{Latin Modern Roman}[Renderer=HarfBuzz]
+\setsansfont[
+    BoldFont={*/B},
+    ItalicFont={*/I},
+    BoldItalicFont={*/BI},
+    SlantedFont={*/I},
+    BoldSlantedFont={*/BI},
+    SwashFont={*/R},
+    BoldSwashFont={*/B},
+    SmallCapsFont={Latin Modern Roman Caps/R},
+    UprightFont={*/R}
+]{Latin Modern Sans}[Renderer=HarfBuzz]
+\setmonofont[
+    BoldFont={* Light/B},
+    ItalicFont={*/I},
+    BoldItalicFont={* Light/BI},
+    SlantedFont={* Slanted/R},
+    BoldSlantedFont={* Light/BI},
+    SwashFont={*/R},
+    BoldSwashFont={* Light/B},
+    SmallCapsFont={* Caps/R},
+    UprightFont={*/R}
+]{Latin Modern Mono}[Renderer=HarfBuzz]
+
+\setmainjfont[
+    BoldFont={*-Bold},
+    UprightFont={*-Regular}
+]{HaranoAjiMincho}[Renderer=HarfBuzz]
+\setsansjfont[
+    BoldFont={*-Bold},
+    UprightFont={*-Regular}
+]{HaranoAjiGothic}[Renderer=HarfBuzz]
