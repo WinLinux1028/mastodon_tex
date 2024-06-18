@@ -139,7 +139,7 @@ async fn run(
     let png = File::open(format!("{}/file.png", &base_dir)).await?;
     let attachment = match client.upload_media_reader(Box::new(png), None).await?.json {
         UploadMedia::Attachment(a) => a,
-        UploadMedia::AsyncAttachment(a) => get_async_attachment(client, a).await,
+        UploadMedia::AsyncAttachment(a) => get_async_attachment(client, a).await.ok_or("")?,
     };
 
     let visibility = match &msg.visibility {
@@ -162,13 +162,18 @@ async fn run(
     Ok(())
 }
 
-async fn get_async_attachment(client: &Mastodon, attachment: AsyncAttachment) -> Attachment {
-    loop {
+async fn get_async_attachment(
+    client: &Mastodon,
+    attachment: AsyncAttachment,
+) -> Option<Attachment> {
+    for _ in 0..10 {
         match client.get_media(attachment.id.clone()).await {
-            Ok(o) => return o.json,
+            Ok(o) => return Some(o.json),
             Err(_) => tokio::time::sleep(Duration::from_secs(1)).await,
-        };
+        }
     }
+
+    None
 }
 
 fn text_clean(s: &str) -> Option<String> {
